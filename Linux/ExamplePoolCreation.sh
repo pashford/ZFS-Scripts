@@ -30,6 +30,9 @@
 # 
 # CDDL HEADER END 
 # 
+# 19-Dec-2014	Peter Ashford	Updated to align with larger pages and
+#				added comments about what/why geometry
+#				is changed.
 # 18-Dec-2014	Peter Ashford	Created this.
 
 #
@@ -43,15 +46,21 @@ done
 #
 # Create the partition tables for the cache and log devices
 #
-# The cylinders will be block aligned with SSD pages as large as 16KB.
+# The cylinders will be block aligned with SSD pages as large as 4MB.
 #
-# The cylinder count is correct for the Intel 100GB S3700 SSD.
+# It is necessary to change the geometry, as the default has 255 heads
+# and 63 sectors per track, which aligns poorly with SSD pages.  Proper
+# alignment with SSD pages is critical to good performance.
+#
+# The cylinder count is appropriate for the Intel 100GB S3700 SSD.
+# By Intel spec, this SSD has 195371568 512-byte sectors.
 #
 for i in c d
 do
-    ( echo '1,4111,L' ; echo '4112,,L' ) | sfdisk -C 23941 -H 255 -S 32 -q /dev/sd${i}
+    ( echo '1,4096,L' ; echo '4097,,L' ) | sfdisk -C 23849 -H 256 -S 32 -q /dev/sd${i}
 done
 
-zpool create -f -o ashift=12 data raidz2 sde sdf sdg sdh sdi sdj sdk sdl sdm sdn \
+zpool create -f -o ashift=12 data \
+    raidz2 sde sdf sdg sdh sdi sdj sdk sdl sdm sdn \
     log mirror /dev/sdc1 /dev/sdd1 \
     cache /dev/sdc2 /dev/sdd2
